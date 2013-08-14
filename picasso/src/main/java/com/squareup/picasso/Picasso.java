@@ -183,6 +183,11 @@ public class Picasso {
     return new RequestBuilder(this, null, resourceId);
   }
 
+    public void markBitmapUnused(Bitmap bmp) {
+        if (bmp != null)
+            cache.decreaseRefCount(bmp);
+    }
+
   /** {@code true} if debug display, logging, and statistics are enabled. */
   @SuppressWarnings("UnusedDeclaration") public boolean isDebugging() {
     return debugging;
@@ -255,6 +260,7 @@ public class Picasso {
       }
       targetToRequest.remove(join.getTarget());
       if (result != null) {
+          cache.increaseRefCount(result);
         join.complete(result, from);
       } else {
         join.error();

@@ -39,13 +39,13 @@ import static org.mockito.Mockito.verify;
 @Config(manifest = Config.NONE)
 public class ImageViewRequestTest {
 
-  @Test(expected = AssertionError.class)
-  public void throwsErrorWithNullResult() throws Exception {
-    ImageViewRequest request =
-        new ImageViewRequest(mock(Picasso.class), URI_1, 0, mockImageViewTarget(), null, null,
-            false, false, 0, null, URI_KEY_1, null);
-    request.complete(null, MEMORY);
-  }
+//  @Test(expected = AssertionError.class)
+//  public void throwsErrorWithNullResult() throws Exception {
+//    ImageViewRequest request =
+//        new ImageViewRequest(mock(Picasso.class), URI_1, 0, mockImageViewTarget(), null, null,
+//            false, false, 0, null, URI_KEY_1, null);
+//    request.complete(null, MEMORY);
+//  }
 
   @Test
   public void invokesTargetAndCallbackSuccessIfTargetIsNotNull() throws Exception {

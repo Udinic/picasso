@@ -32,4 +32,21 @@ class PicassoBitmapOptions extends BitmapFactory.Options {
   boolean hasRotationPivot;
 
   int exifRotation;
+
+    @Override
+    public String toString() {
+        return "PicassoBitmapOptions{" +
+                "targetWidth=" + targetWidth +
+                ", targetHeight=" + targetHeight +
+                ", centerCrop=" + centerCrop +
+                ", centerInside=" + centerInside +
+                ", targetScaleX=" + targetScaleX +
+                ", targetScaleY=" + targetScaleY +
+                ", targetRotation=" + targetRotation +
+                ", targetPivotX=" + targetPivotX +
+                ", targetPivotY=" + targetPivotY +
+                ", hasRotationPivot=" + hasRotationPivot +
+                ", exifRotation=" + exifRotation +
+                '}';
+    }
 }

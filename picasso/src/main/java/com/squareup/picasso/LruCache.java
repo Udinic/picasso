@@ -17,12 +17,14 @@ package com.squareup.picasso;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import android.util.Log;
+
+import java.util.*;
 
 /** A memory cache which uses a least-recently used eviction policy. */
 public class LruCache implements Cache {
   final LinkedHashMap<String, Bitmap> map;
+  final LinkedHashMap<Bitmap, Integer> bitmapsUsage;
   private final int maxSize;
 
   private int size;
@@ -43,6 +45,7 @@ public class LruCache implements Cache {
     }
     this.maxSize = maxSize;
     this.map = new LinkedHashMap<String, Bitmap>(0, 0.75f, true);
+    this.bitmapsUsage = new LinkedHashMap<Bitmap, Integer>();
   }
 
   @Override public Bitmap get(String key) {
@@ -53,15 +56,43 @@ public class LruCache implements Cache {
     Bitmap mapValue;
     synchronized (this) {
       mapValue = map.get(key);
+
       if (mapValue != null) {
-        hitCount++;
-        return mapValue;
+          increaseRefCount(mapValue);
+          hitCount++;
+          return mapValue;
       }
       missCount++;
     }
 
     return null;
   }
+
+    @Override public synchronized void reusedBitmap(Bitmap bmp) {
+//        bitmapsUsage.put(bmp, 1);
+        // This bmp will be added later with the new key it belongs to
+        for (Map.Entry<String, Bitmap> entry : map.entrySet()) {
+            if (entry.getValue().equals(bmp)) {
+                Log.d("decodingUdinicResources", "Removed key["+entry.getKey().hashCode()+"] for bmp["+entry.getValue().hashCode()+"]");
+                map.remove(entry.getKey());
+                size -= Utils.getBitmapBytes(entry.getValue());
+                break;
+            }
+        }
+    }
+
+    @Override public synchronized void increaseRefCount(Bitmap bmp) {
+        Integer currRefCount = bitmapsUsage.get(bmp);
+        Integer newVal = currRefCount == null ? 1 : currRefCount+1;
+        Log.v("decodingUdinicResources", "increaseRefCount[" + bmp.hashCode() + "] [" + currRefCount + "]->[" + newVal + "]");
+        bitmapsUsage.put(bmp, newVal);
+    }
+    @Override public synchronized void decreaseRefCount(Bitmap bmp) {
+        Integer currRefCount = bitmapsUsage.get(bmp);
+        Integer newVal = currRefCount == null || currRefCount == 0?0: currRefCount-1;
+        Log.v("decodingUdinicResources", "decreaseRefCount[" + bmp.hashCode() + "] [" + currRefCount + "]->[" + newVal + "]");
+        bitmapsUsage.put(bmp, newVal);
+    }
 
   @Override public void set(String key, Bitmap bitmap) {
     if (key == null || bitmap == null) {
@@ -72,8 +103,14 @@ public class LruCache implements Cache {
     synchronized (this) {
       putCount++;
       size += Utils.getBitmapBytes(bitmap);
-      previous = map.put(key, bitmap);
-      if (previous != null) {
+        Log.d("decodingUdinicResources", "Added key["+key.hashCode()+"] for bmp["+bitmap.hashCode()+"]");
+
+        previous = map.put(key, bitmap);
+//        increaseRefCount(bitmap);
+
+//TODO do something about previous, maybe remove from ref count?
+
+        if (previous != null) {
         size -= Utils.getBitmapBytes(previous);
       }
     }
@@ -99,11 +136,49 @@ public class LruCache implements Cache {
         key = toEvict.getKey();
         value = toEvict.getValue();
         map.remove(key);
+        bitmapsUsage.remove(value);
         size -= Utils.getBitmapBytes(value);
         evictionCount++;
       }
     }
   }
+
+    private void printBitmapRefCount() {
+        Set<Map.Entry<Bitmap, Integer>> entries = bitmapsUsage.entrySet();
+        StringBuilder sd = new StringBuilder("");
+        for (Map.Entry<Bitmap, Integer> entry : entries) {
+            sd.append("bmp["+entry.getKey().hashCode()+"] refs["+entry.getValue()+"]\n");
+        }
+        Log.d("LruCache", "printBitmapRefCount\n" + sd.toString());
+    }
+
+    @Override
+    public Bitmap getUnusedBmp(int w, int h) {
+        Set<Map.Entry<Bitmap, Integer>> entries = bitmapsUsage.entrySet();
+        printBitmapRefCount();
+
+        for (Map.Entry<Bitmap, Integer> entry : entries) {
+            if (entry.getValue().intValue() == 0 &&
+                entry.getKey().getWidth() == w && entry.getKey().getHeight() == h)
+                return entry.getKey();
+        }
+
+        return null;
+    }
+
+//    @Override
+//    public Bitmap getLeastUsedBitmap() {
+//        if (map.size() < 5)
+//            return null;
+//
+//        Map.Entry<String, Bitmap> victim = map.entrySet().iterator().next();
+//        Bitmap bmp = victim.getValue();
+//        map.remove(victim.getKey());
+//        size -= Utils.getBitmapBytes(bmp);
+//        evictionCount++;
+//
+//        return bmp;
+//    }
 
   /** Clear the cache. */
   public final void evictAll() {
@@ -120,7 +195,8 @@ public class LruCache implements Cache {
     return maxSize;
   }
 
-  public final synchronized void clear() {
+
+    public final synchronized void clear() {
     evictAll();
   }
 

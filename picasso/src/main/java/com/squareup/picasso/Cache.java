@@ -37,6 +37,16 @@ public interface Cache {
   /** Returns the maximum size in bytes that the cache can hold. */
   int maxSize();
 
+//  Bitmap getLeastUsedBitmap();
+
+    Bitmap getUnusedBmp(int w, int h);
+
+    void reusedBitmap(Bitmap bmp);
+
+    void increaseRefCount(Bitmap bmp);
+
+    void decreaseRefCount(Bitmap bmp);
+
   /** Clears the cache. */
   void clear();
 
@@ -58,7 +68,30 @@ public interface Cache {
       return 0;
     }
 
-    @Override public void clear() {
+      @Override
+      public Bitmap getUnusedBmp(int w, int h) {
+          return null;
+      }
+
+      @Override
+      public void reusedBitmap(Bitmap bmp) {
+
+      }
+
+      @Override
+      public void increaseRefCount(Bitmap bmp) {
+
+      }
+
+      @Override
+      public void decreaseRefCount(Bitmap bmp) {
+      }
+
+//      @Override public Bitmap getLeastUsedBitmap() {
+//        return null;
+//    }
+
+      @Override public void clear() {
     }
   };
 }

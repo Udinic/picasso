@@ -66,6 +66,7 @@ public class RequestBuilder {
   private PicassoBitmapOptions getOptions() {
     if (options == null) {
       options = new PicassoBitmapOptions();
+        options.inMutable = false;
     }
     return options;
   }

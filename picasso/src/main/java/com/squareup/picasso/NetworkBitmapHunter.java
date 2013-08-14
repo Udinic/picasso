@@ -18,6 +18,8 @@ package com.squareup.picasso;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -39,18 +41,9 @@ class NetworkBitmapHunter extends BitmapHunter {
 
   @Override Bitmap decode(Uri uri, PicassoBitmapOptions options, int retryCount)
       throws IOException {
-    boolean loadFromLocalCacheOnly = retryCount == 0 || airplaneMode;
-    Response response = downloader.load(this.uri, loadFromLocalCacheOnly);
-    loadedFrom = response.cached ? DISK : NETWORK;
-
-    Bitmap result = response.getBitmap();
-    if (result != null) {
-      return result;
-    }
-
     InputStream is = null;
     try {
-      is = response.getInputStream();
+      is = getInputStream(retryCount == 0 || airplaneMode);
       return decodeStream(is, options);
     } finally {
       Utils.closeQuietly(is);
@@ -61,20 +54,37 @@ class NetworkBitmapHunter extends BitmapHunter {
     return loadedFrom;
   }
 
+  private InputStream getInputStream(boolean localCacheOnly) throws IOException {
+    Response response = downloader.load(uri, localCacheOnly);
+    loadedFrom = response.cached ? DISK : NETWORK;
+    return response.stream;
+  }
+
   private Bitmap decodeStream(InputStream stream, PicassoBitmapOptions options) throws IOException {
     if (stream == null) {
       return null;
     }
+
     if (options != null && options.inJustDecodeBounds) {
       MarkableInputStream markStream = new MarkableInputStream(stream);
       stream = markStream;
+        Bitmap inBitmap = options.inBitmap;
+        options.inBitmap = null;
 
       long mark = markStream.savePosition(1024); // Mirrors BitmapFactory.cpp value.
       BitmapFactory.decodeStream(stream, null, options);
       calculateInSampleSize(options);
 
       markStream.reset(mark);
+        options.inBitmap = inBitmap;
+        if (inBitmap != null)
+        Log.d("udini", "inBitmap["+inBitmap.hashCode()+"] = h[" + inBitmap.getHeight() + "] w[" + inBitmap.getWidth() + "]");
     }
-    return BitmapFactory.decodeStream(stream, null, options);
+
+
+      Bitmap ret = BitmapFactory.decodeStream(stream, null, options);
+      Log.d("udini", "RetBMP["+ret.hashCode()+"] h["+ret.getHeight()+"] w["+ret.getWidth()+"] options = " + options);
+
+      return ret;
   }
 }

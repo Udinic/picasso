@@ -85,6 +85,8 @@ abstract class BitmapHunter implements Runnable {
     } catch (IOException e) {
       exception = e;
       dispatcher.dispatchRetry(this);
+    } catch (Throwable e) {
+        e.printStackTrace();
     } finally {
       Thread.currentThread().setName(Utils.THREAD_IDLE_NAME);
     }
@@ -312,4 +314,16 @@ abstract class BitmapHunter implements Runnable {
 
     return result;
   }
+
+    protected String getDetails(Bitmap bmp, PicassoBitmapOptions options) {
+        return "org[" + options.outHeight + "," + options.outWidth + "], " + getBmpDetails(bmp);
+    }
+
+    protected String getBmpDetails(Bitmap bmp) {
+        if (bmp == null)
+            return "bmp is NULL";
+        else
+            return "bmp(" + bmp.hashCode() + ")[" + bmp.getHeight() + "," + bmp.getWidth() + "] isMutable["+bmp.isMutable()+"]";
+    }
+
 }
